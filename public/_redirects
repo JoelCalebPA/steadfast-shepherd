@@ -1,2 +1,2 @@
-# Force canonical URL (remove trailing slash except for root)
-https://resultado-elecciones-peru2026.netlify.app/*  https://resultado-elecciones-peru2026.netlify.app/:splat  301!
+# Canonical URL - redirect root with trailing slash to without
+https://resultado-elecciones-peru2026.netlify.app/  https://resultado-elecciones-peru2026.netlify.app  301!
