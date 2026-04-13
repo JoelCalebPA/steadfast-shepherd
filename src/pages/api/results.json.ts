@@ -24,7 +24,6 @@ export const GET: APIRoute = async () => {
     }
 
     const data = await response.json();
-    console.log(data);
 
     if (data.success && Array.isArray(data.data)) {
       const sorted = data.data.sort(
