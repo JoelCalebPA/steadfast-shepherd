@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1E40AF"/>
+  <rect x="40" y="40" width="1120" height="550" rx="20" fill="white"/>
+  
+  <!-- Peru flag colors at top -->
+  <rect x="40" y="40" width="1120" height="183" fill="#D91023"/>
+  <rect x="40" y="223" width="1120" height="184" fill="white"/>
+  
+  <!-- Ballot box icon -->
+  <rect x="520" y="280" width="160" height="140" rx="10" fill="#1E40AF"/>
+  <rect x="540" y="260" width="120" height="30" rx="5" fill="#DC2626"/>
+  <circle cx="590" cy="350" r="25" fill="white"/>
+  <path d="M590 335 L590 365 M575 350 L605 350" stroke="#1E40AF" stroke-width="4"/>
+  
+  <!-- Text -->
+  <text x="600" y="480" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#1F2937" text-anchor="middle">ELECCIONES 2026</text>
+  <text x="600" y="530" font-family="Arial, sans-serif" font-size="28" fill="#6B7280" text-anchor="middle">Resultados en Vivo | Perú</text>
+</svg>
