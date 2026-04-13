@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import ElectionHeader from "../components/ElectionHeader.astro";
 import Footer from "../components/Footer.astro";
 import "../styles/global.css";
 
@@ -8,8 +7,6 @@ const initialLastUpdated = new Date();
 ---
 
 <Layout>
-  <ElectionHeader title="Elecciones 2026" />
-
   <main>
     <div id="progressBar"></div>
     <div id="resultsGrid" class="results-grid">
