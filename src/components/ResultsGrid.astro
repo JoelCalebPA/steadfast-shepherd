@@ -1,0 +1,381 @@
+---
+interface Candidate {
+  nombreAgrupacionPolitica: string;
+  codigoAgrupacionPolitica: number;
+  nombreCandidato: string;
+  dniCandidato: string;
+  totalVotosValidos: number;
+  porcentajeVotosValidos: number;
+  porcentajeVotosEmitidos: number;
+}
+
+interface Props {
+  candidates: Candidate[];
+  loading?: boolean;
+  fallback?: boolean;
+}
+
+const { candidates, loading = false, fallback = false } = Astro.props;
+---
+
+<div class="grid-container">
+  {loading && (
+    <div class="skeleton-grid">
+      {[1, 2, 3, 4].map((i) => (
+        <div class="skeleton-card">
+          <div class="skeleton skeleton-badge"></div>
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton-content">
+            <div class="skeleton skeleton-name"></div>
+            <div class="skeleton skeleton-party"></div>
+            <div class="skeleton skeleton-bar"></div>
+            <div class="skeleton skeleton-votes"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {!loading && candidates.length > 0 && (
+    <div class="cards-grid">
+      {candidates.map((candidate, index) => (
+        <div style={`animation-delay: ${index * 0.1}s`}>
+          <article
+            class="card"
+            style={`
+              --bar-color: ${
+                ["#DC2626", "#1E40AF", "#059669", "#7C3AED"][index]
+              };
+            `}
+          >
+            <div class="rank-badge">{index + 1}</div>
+
+            <div class="avatar" style={`background: ${
+              ["#DC2626", "#1E40AF", "#059669", "#7C3AED"][index]
+            }`}>
+              {candidate.nombreCandidato
+                .split(" ")
+                .filter((word) => word.length > 2)
+                .slice(0, 2)
+                .map((word) => word[0])
+                .join("")
+                .toUpperCase()}
+            </div>
+
+            <div class="content">
+              <h2 class="candidate-name">{candidate.nombreCandidato}</h2>
+              <p class="party-name">{candidate.nombreAgrupacionPolitica}</p>
+
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    style={`width: ${Number(candidate.porcentajeVotosValidos).toFixed(2)}%`}
+                  ></div>
+                </div>
+                <span class="percentage">
+                  {Number(candidate.porcentajeVotosValidos).toFixed(2)}%
+                </span>
+              </div>
+
+              <p class="vote-count">
+                {new Intl.NumberFormat("es-PE").format(
+                  candidate.totalVotosValidos
+                )}{" "}
+                votos
+              </p>
+            </div>
+          </article>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {!loading && candidates.length === 0 && (
+    <div class="empty-state">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+      <p>No se encontraron resultados</p>
+    </div>
+  )}
+
+  {fallback && !loading && (
+    <div class="fallback-notice">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+      </svg>
+      <span>Mostrando datos de respaldo (API no disponible)</span>
+    </div>
+  )}
+</div>
+
+<style>
+  .grid-container {
+    width: 100%;
+  }
+
+  .cards-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .card {
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: slideIn 0.4s ease-out backwards;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--bar-color);
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .rank-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bar-color);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+  }
+
+  .avatar {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--bar-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .candidate-name {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--color-text);
+    line-height: 1.3;
+    padding-right: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .candidate-name {
+      font-size: 1.125rem;
+    }
+  }
+
+  .party-name {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem 0;
+    line-height: 1.4;
+  }
+
+  @media (min-width: 640px) {
+    .party-name {
+      font-size: 0.875rem;
+    }
+  }
+
+  .progress-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--bar-color);
+    border-radius: var(--radius-full);
+    transition: width 0.8s ease-out;
+    animation: growBar 1s ease-out;
+  }
+
+  .percentage {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--bar-color);
+    min-width: 3.5rem;
+    text-align: right;
+  }
+
+  .vote-count {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .skeleton-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .skeleton-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .skeleton-card {
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .skeleton-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+  }
+
+  .skeleton-avatar {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: var(--radius-lg);
+  }
+
+  .skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .skeleton-name {
+    height: 20px;
+    width: 80%;
+  }
+
+  .skeleton-party {
+    height: 14px;
+    width: 60%;
+  }
+
+  .skeleton-bar {
+    height: 12px;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+
+  .skeleton-votes {
+    height: 14px;
+    width: 40%;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  .empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .fallback-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+    color: #B45309;
+    font-size: 0.875rem;
+  }
+
+  .fallback-notice svg {
+    flex-shrink: 0;
+  }
+</style>

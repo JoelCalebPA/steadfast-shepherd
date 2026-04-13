@@ -1,11 +1,489 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+import ElectionHeader from "../components/ElectionHeader.astro";
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const initialLastUpdated = new Date();
 ---
 
 <Layout>
-	<Welcome />
+  <ElectionHeader title="Elecciones 2026" />
+
+  <main>
+    <div id="progressBar"></div>
+    <div id="resultsGrid" class="results-grid">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando resultados...</p>
+      </div>
+    </div>
+  </main>
+
+  <Footer lastUpdated={initialLastUpdated} />
 </Layout>
+
+<script>
+  const POLL_INTERVAL = 60 * 1000;
+  let isLoading = false;
+  let lastResultsHash = "";
+  let lastProgressHash = "";
+
+  async function fetchAll() {
+    if (isLoading) return;
+    isLoading = true;
+
+    const grid = document.getElementById("resultsGrid");
+    const progressBar = document.getElementById("progressBar");
+    const refreshBtns = document.querySelectorAll(".refresh-btn");
+
+    refreshBtns.forEach((btn) => btn.classList.add("loading"));
+
+    try {
+      const [resultsResponse, progressResponse] = await Promise.all([
+        fetch("/api/results.json"),
+        fetch("/api/progress.json"),
+      ]);
+
+      const resultsData = await resultsResponse.json();
+      const progressData = await progressResponse.json();
+
+      const newResultsHash = JSON.stringify(resultsData.data);
+      const newProgressHash = JSON.stringify(progressData.data);
+
+      let dataChanged = false;
+
+      if (newResultsHash !== lastResultsHash) {
+        lastResultsHash = newResultsHash;
+        if (resultsData.success && resultsData.data) {
+          renderResults(resultsData.data, resultsData.fallback);
+          dataChanged = true;
+        }
+      }
+
+      if (newProgressHash !== lastProgressHash) {
+        lastProgressHash = newProgressHash;
+        if (progressData.success && progressData.data) {
+          renderProgress(progressData.data);
+          dataChanged = true;
+        }
+      }
+
+      if (dataChanged) {
+        dispatchResultsUpdated();
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      isLoading = false;
+      refreshBtns.forEach((btn) => btn.classList.remove("loading"));
+    }
+  }
+
+  function renderProgress(data: any) {
+    const progressBar = document.getElementById("progressBar");
+    if (!progressBar) return;
+
+    const formattedCounted = new Intl.NumberFormat("es-PE").format(
+      data.contabilizadas || 0
+    );
+    const formattedTotal = new Intl.NumberFormat("es-PE").format(
+      data.totalActas || 1
+    );
+    const percentage = Number(data.actasContabilizadas || 0).toFixed(2);
+
+    progressBar.innerHTML = `
+      <div class="progress-card">
+        <div class="progress-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18" />
+            <path d="m19 9-5 5-4-4-3 3" />
+          </svg>
+          <span>Progreso del escrutinio</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" style="width: ${percentage}%"></div>
+        </div>
+        <div class="progress-stats">
+          <span class="percentage">${percentage}%</span>
+          <span class="detail">${formattedCounted} de ${formattedTotal} actas</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResults(candidates: any[], fallback: boolean = false) {
+    const grid = document.getElementById("resultsGrid");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+
+    const container = document.createElement("div");
+    container.className = "grid-container";
+
+    const cardsGrid = document.createElement("div");
+    cardsGrid.className = "cards-grid";
+
+    const barColors = ["#DC2626", "#1E40AF", "#059669", "#7C3AED"];
+
+    candidates.forEach((candidate: any, index: number) => {
+      const initials = candidate.nombreCandidato
+        .split(" ")
+        .filter((word: string) => word.length > 2)
+        .slice(0, 2)
+        .map((word: string) => word[0])
+        .join("")
+        .toUpperCase();
+
+      const formattedVotes = new Intl.NumberFormat("es-PE").format(
+        candidate.totalVotosValidos
+      );
+      const percentage = Number(candidate.porcentajeVotosValidos).toFixed(2);
+      const barColor = barColors[index % barColors.length];
+
+      const card = document.createElement("article");
+      card.className = "card";
+      card.style.setProperty("--bar-color", barColor);
+      card.style.animationDelay = `${index * 0.1}s`;
+
+      card.innerHTML = `
+        <div class="rank-badge">${index + 1}</div>
+        <div class="avatar" style="background: ${barColor}">${initials}</div>
+        <div class="content">
+          <h2 class="candidate-name">${candidate.nombreCandidato}</h2>
+          <p class="party-name">${candidate.nombreAgrupacionPolitica}</p>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${percentage}%"></div>
+            </div>
+            <span class="percentage">${percentage}%</span>
+          </div>
+          <p class="vote-count">${formattedVotes} votos</p>
+        </div>
+      `;
+
+      cardsGrid.appendChild(card);
+    });
+
+    container.appendChild(cardsGrid);
+
+    if (fallback) {
+      const notice = document.createElement("div");
+      notice.className = "fallback-notice";
+      notice.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 16v-4"></path>
+          <path d="M12 8h.01"></path>
+        </svg>
+        <span>Datos de respaldo (API no disponible)</span>
+      `;
+      container.appendChild(notice);
+    }
+
+    grid.appendChild(container);
+  }
+
+  function dispatchResultsUpdated() {
+    window.dispatchEvent(
+      new CustomEvent("resultsUpdated", {
+        detail: { timestamp: new Date().toISOString() },
+      })
+    );
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchAll();
+    setInterval(fetchAll, POLL_INTERVAL);
+    window.addEventListener("refreshResults", () => {
+      fetchAll();
+    });
+  });
+</script>
+
+<style>
+  main {
+    flex: 1;
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    main {
+      padding: 2rem;
+    }
+  }
+
+  :global(.progress-card) {
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  :global(.progress-header) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 640px) {
+    :global(.progress-header) {
+      font-size: 1rem;
+    }
+  }
+
+  :global(.progress-header svg) {
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  :global(.progress-bar-container) {
+    height: 24px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.progress-bar-fill) {
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      var(--color-primary) 0%,
+      var(--color-primary-light) 100%
+    );
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease-out;
+    animation: growProgress 0.8s ease-out;
+  }
+
+  @keyframes growProgress {
+    from {
+      width: 0%;
+    }
+  }
+
+  :global(.progress-stats) {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+  }
+
+  :global(.progress-stats .percentage) {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  :global(.progress-stats .detail) {
+    color: var(--color-text-muted);
+  }
+
+  :global(.grid-container) {
+    width: 100%;
+  }
+
+  :global(.cards-grid) {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    :global(.cards-grid) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  :global(.card) {
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: slideIn 0.4s ease-out backwards;
+    position: relative;
+    overflow: hidden;
+  }
+
+  :global(.card::before) {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--bar-color);
+  }
+
+  :global(.card:hover) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  :global(.rank-badge) {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bar-color);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+  }
+
+  :global(.avatar) {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--bar-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  :global(.content) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  :global(.candidate-name) {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--color-text);
+    line-height: 1.3;
+    padding-right: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    :global(.candidate-name) {
+      font-size: 1.125rem;
+    }
+  }
+
+  :global(.party-name) {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem 0;
+    line-height: 1.4;
+  }
+
+  @media (min-width: 640px) {
+    :global(.party-name) {
+      font-size: 0.875rem;
+    }
+  }
+
+  :global(.progress-container) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.progress-bar) {
+    flex: 1;
+    height: 12px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  :global(.progress-fill) {
+    height: 100%;
+    background: var(--bar-color);
+    border-radius: var(--radius-full);
+    transition: width 0.8s ease-out;
+    animation: growBar 1s ease-out;
+  }
+
+  :global(.percentage) {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--bar-color);
+    min-width: 3.5rem;
+    text-align: right;
+  }
+
+  :global(.vote-count) {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-weight: 500;
+  }
+
+  :global(.fallback-notice) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+    color: #b45309;
+    font-size: 0.875rem;
+  }
+
+  :global(.fallback-notice svg) {
+    flex-shrink: 0;
+  }
+
+  :global(.refresh-btn.loading svg) {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .results-grid {
+    width: 100%;
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-muted);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+</style>
