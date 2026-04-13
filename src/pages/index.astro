@@ -8,13 +8,24 @@ const initialLastUpdated = new Date();
 
 <Layout>
   <main>
+    <header class="page-header">
+      <h1 class="sr-only">Resultados Oficiales Elecciones Perú 2026</h1>
+      <h2 class="sr-only">Resultados Oficiales Elecciones Perú 2026</h2>
+    </header>
     <div id="progressBar"></div>
-    <div id="resultsGrid" class="results-grid">
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Cargando resultados...</p>
+    <section>
+      <h2 class="sr-only">Progreso del Escrutinio</h2>
+      <div id="progressBar"></div>
+    </section>
+    <section>
+      <h2 class="sr-only">Candidatos y Votos</h2>
+      <div id="resultsGrid" class="results-grid">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando resultados...</p>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <Footer lastUpdated={initialLastUpdated} />
