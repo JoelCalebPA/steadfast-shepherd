@@ -30,9 +30,9 @@ export const GET: APIRoute = async () => {
         (a: { totalVotosValidos: number }, b: { totalVotosValidos: number }) =>
           b.totalVotosValidos - a.totalVotosValidos
       );
-      const top4 = sorted.slice(0, 4);
+      const top8 = sorted.slice(0, 8);
 
-      return new Response(JSON.stringify({ success: true, data: top4 }), {
+      return new Response(JSON.stringify({ success: true, data: top8 }), {
         status: 200,
         headers: {
           "Content-Type": "application/json",

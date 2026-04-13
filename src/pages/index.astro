@@ -27,10 +27,14 @@ const initialLastUpdated = new Date();
   let lastProgressHash = "";
 
   const candidateColors: Record<string, { color: string; dni: string; partyCode: string }> = {
-    "10001088": { color: "#FF6B00", dni: "10001088", partyCode: "00000008" },
-    "07845838": { color: "#60A5FA", dni: "07845838", partyCode: "00000035" },
-    "06506278": { color: "#FACC15", dni: "06506278", partyCode: "00000016" },
-    "09177250": { color: "#16A34A", dni: "09177250", partyCode: "00000014" },
+    "10001088": { color: "#DE722E", dni: "10001088", partyCode: "00000008" },
+    "07845838": { color: "#2E699D", dni: "07845838", partyCode: "00000035" },
+    "06506278": { color: "#F5D84C", dni: "06506278", partyCode: "00000016" },
+    "09177250": { color: "#2A5B1B", dni: "09177250", partyCode: "00000014" },
+    "06002034": { color: "#363435", dni: "06002034", partyCode: "00000023" },
+    "25331980": { color: "#D62F21", dni: "25331980", partyCode: "00000002" },
+    "16002918": { color: "#75BC3B", dni: "16002918", partyCode: "00000010" },
+    "07867789": { color: "#1730C3", dni: "07867789", partyCode: "00000033" },
   };
 
   function getCandidatePhotoUrl(dni: string): string {
