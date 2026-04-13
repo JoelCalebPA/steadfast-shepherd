@@ -29,6 +29,21 @@ const initialLastUpdated = new Date();
   let lastResultsHash = "";
   let lastProgressHash = "";
 
+  const candidateColors: Record<string, { color: string; dni: string; partyCode: string }> = {
+    "10001088": { color: "#FF6B00", dni: "10001088", partyCode: "00000008" },
+    "07845838": { color: "#60A5FA", dni: "07845838", partyCode: "00000035" },
+    "06506278": { color: "#FACC15", dni: "06506278", partyCode: "00000016" },
+    "09177250": { color: "#16A34A", dni: "09177250", partyCode: "00000014" },
+  };
+
+  function getCandidatePhotoUrl(dni: string): string {
+    return `https://resultadoelectoral.onpe.gob.pe/assets/img-reales/candidatos/${dni}.jpg`;
+  }
+
+  function getPartyLogoUrl(partyCode: string): string {
+    return `https://resultadoelectoral.onpe.gob.pe/assets/img-reales/partidos/${partyCode}.jpg`;
+  }
+
   async function fetchAll() {
     if (isLoading) return;
     isLoading = true;
@@ -124,8 +139,6 @@ const initialLastUpdated = new Date();
     const cardsGrid = document.createElement("div");
     cardsGrid.className = "cards-grid";
 
-    const barColors = ["#DC2626", "#1E40AF", "#059669", "#7C3AED"];
-
     candidates.forEach((candidate: any, index: number) => {
       const initials = candidate.nombreCandidato
         .split(" ")
@@ -139,7 +152,11 @@ const initialLastUpdated = new Date();
         candidate.totalVotosValidos
       );
       const percentage = Number(candidate.porcentajeVotosValidos).toFixed(2);
-      const barColor = barColors[index % barColors.length];
+
+      const candidateInfo = candidateColors[candidate.dniCandidato];
+      const barColor = candidateInfo?.color || "#6B7280";
+      const photoUrl = candidateInfo ? getCandidatePhotoUrl(candidateInfo.dni) : '';
+      const logoUrl = candidateInfo ? getPartyLogoUrl(candidateInfo.partyCode) : '';
 
       const card = document.createElement("article");
       card.className = "card";
@@ -147,8 +164,13 @@ const initialLastUpdated = new Date();
       card.style.animationDelay = `${index * 0.1}s`;
 
       card.innerHTML = `
-        <div class="rank-badge">${index + 1}</div>
-        <div class="avatar" style="background: ${barColor}">${initials}</div>
+        <div class="party-logo-badge">
+          <img src="${logoUrl}" alt="${candidate.nombreAgrupacionPolitica}" onerror="this.style.display='none';" />
+        </div>
+        <div class="candidate-photo">
+          <img src="${photoUrl}" alt="${candidate.nombreCandidato}" onerror="this.parentElement.classList.add('photo-error');" />
+          <div class="photo-fallback">${initials}</div>
+        </div>
         <div class="content">
           <h2 class="candidate-name">${candidate.nombreCandidato}</h2>
           <p class="party-name">${candidate.nombreAgrupacionPolitica}</p>
@@ -305,9 +327,11 @@ const initialLastUpdated = new Date();
   :global(.card) {
     background: var(--color-card);
     border-radius: var(--radius-lg);
-    padding: 1.25rem;
+    padding: 1rem;
+    padding-top: 1.5rem;
     box-shadow: var(--shadow-md);
     display: flex;
+    flex-direction: row;
     align-items: flex-start;
     gap: 1rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -331,35 +355,75 @@ const initialLastUpdated = new Date();
     box-shadow: var(--shadow-lg);
   }
 
-  :global(.rank-badge) {
+  :global(.party-logo-badge) {
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bar-color);
-    color: white;
-    font-size: 0.875rem;
-    font-weight: 700;
+    background: white;
     border-radius: var(--radius-sm);
+    padding: 2px;
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
   }
 
-  :global(.avatar) {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    border-radius: var(--radius-lg);
+  :global(.party-logo-badge img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  :global(.candidate-photo) {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--bar-color);
+    position: relative;
+    background: var(--bar-color);
+  }
+
+  @media (min-width: 640px) {
+    :global(.candidate-photo) {
+      width: 100px;
+      height: 100px;
+      min-width: 100px;
+    }
+  }
+
+  :global(.candidate-photo img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.candidate-photo.photo-error img) {
+    display: none;
+  }
+
+  :global(.photo-fallback) {
+    position: absolute;
+    inset: 0;
     background: var(--bar-color);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    letter-spacing: -0.025em;
+  }
+
+  :global(.candidate-photo.photo-error .photo-fallback) {
+    display: flex;
+  }
+
+  :global(.candidate-photo:not(.photo-error) .photo-fallback) {
+    display: none;
   }
 
   :global(.content) {
@@ -373,7 +437,7 @@ const initialLastUpdated = new Date();
     margin: 0 0 0.25rem 0;
     color: var(--color-text);
     line-height: 1.3;
-    padding-right: 2rem;
+    padding-right: 2.5rem;
   }
 
   @media (min-width: 640px) {
@@ -385,7 +449,7 @@ const initialLastUpdated = new Date();
   :global(.party-name) {
     font-size: 0.75rem;
     color: var(--color-text-muted);
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.75rem 0;
     line-height: 1.4;
   }
 
