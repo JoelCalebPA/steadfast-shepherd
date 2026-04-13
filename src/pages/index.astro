@@ -68,9 +68,14 @@ const initialLastUpdated = new Date();
 
     try {
       const [resultsResponse, progressResponse] = await Promise.all([
-        fetch("/api/results.json"),
-        fetch("/api/progress.json"),
+        fetch(`/api/results.json?_=${Date.now()}`, { cache: "no-store" }),
+        fetch(`/api/progress.json?_=${Date.now()}`, { cache: "no-store" }),
       ]);
+
+      if (!resultsResponse.ok || !progressResponse.ok) {
+        console.error("API returned error:", resultsResponse.status, progressResponse.status);
+        return;
+      }
 
       const resultsData = await resultsResponse.json();
       const progressData = await progressResponse.json();
